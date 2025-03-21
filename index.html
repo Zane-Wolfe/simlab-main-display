@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="style.css" rel="stylesheet">
+    <script src="clock.js"></script>
+    <script src="webgl/glThing.js"></script>
+    <script src="'webgl/webgl_interface.js"></script>
+    <title>SimScreen</title>
+    <script id="2dVertexShader" type="notjs">
+		attribute vec4 a_position;	
+		//We now want to read in Colors
+		attribute vec3 vert_color;
+		//However, we want to send the color to
+		//The fragment Shader
+		varying vec3 fragColor;
+		
+		//Now we need a uniform.  A uniform is something consistent for all the vertices
+		//in a buffers
+		uniform vec3 transform;
+		uniform vec3 rotation;		
+		
+		//Use a function to position the object
+		vec4 PositionObject(vec4 pos)
+		{
+			mat4 translateM = mat4(1.0,0.0,0.0,0.0,
+						   0.0,1.0,0.0,0.0,
+						   0.0,0.0,1.0,0.0,
+						   transform.x,transform.y,transform.z,1.0);
+			return translateM*pos;	
+		}
+		//Use a function to Rotate the object
+		vec4 RotateObject(vec4 pos)
+		{
+			//This is a nice trick
+			vec3 c = cos(rotation);
+			vec3 s = sin(rotation);
+			fragColor = vert_color;
+			//Surprise!  we have to go column first when we enter the matrix.
+
+			mat4 rotateX = mat4(1.0,	0.0,	0.0,		0.0,
+								0.0,	c.x,	-1.0*s.x,	0.0,
+								0.0,	s.x,	c.x,		0.0,
+								0.0,	0.0,	0.0,		1.0);
+
+			mat4 rotateY = mat4(c.y,	0.0,	-1.0*s.y,	0.0,
+								0.0,	1.0,	0.0,		0.0,
+								s.y,	0.0,	c.y,		0.0,
+								0.0,	0.0,	0.0,		1.0);
+
+			mat4 rotateZ = mat4(c.z,-1.0*s.z,	0.0,		0.0,
+								s.z,	c.z,	0.0,		0.0,
+								0.0,	0.0,	1,			0.0,
+								0.0,	0.0,	0.0,		1.0);
+			return (rotateX * rotateY * rotateZ)*pos;
+		}
+		void main()
+		{
+
+			gl_Position=PositionObject(RotateObject(a_position));
+		}		
+		</SCRIPT>
+		<script id="2dFragmentShader" type="notjs">
+		//Fragment shaders do not have precision so we have to set it.
+		precision mediump float;
+		varying vec3 fragColor;
+		void main()
+		{
+			//gl_FragColor = vec4(0,0,1,1); //Between 0 and 1.
+			gl_FragColor = vec4(fragColor,1);
+		}
+		</script>
+
+</head>
+<body onload="startTime()">
+    <div class="top-left">
+        <div class="row">
+            <div class="column">
+                <h1 id="headertext" class="textgradient">WELCOME TO THE SIM LAB!!!</h1>
+                <h2 id="date" class="textgradient"></h2>
+                <h2 id="time" class="textgradient"></h2>
+            </div>
+            <div class="column">
+                <p>blah blah blahblah blahblahblahblah blah blahblah blahblahblahblah blah blahblah blahblahblahblah blah blahblah blahblahblahblah blah blahblah blahblahblahblah blah blahblah blahblahblah</p>
+            </div>
+        </div>
+        
+        
+    </div>
+
+    <div class="slidecontainer image-wrapper">
+        <div class="mySlides fade">
+            <img src="img/Florida_Poly_IST68.jpg">
+        </div>
+        <div class="mySlides fade">
+            <img src="img/Florida_Poly_IST77.jpg">
+        </div>
+        <div class="mySlides fade">
+            <img src="img/Florida_Poly_IST152.jpg">
+        </div>
+    </div>
+
+    <script>
+        let slideIndex = 0;
+        showSlides();
+        
+        function showSlides() {
+          let i;
+          let slides = document.getElementsByClassName("mySlides");
+          for (i = 0; i < slides.length; i++) {
+            slides[i].style.display = "none";
+          }
+          slideIndex++;
+          if (slideIndex > slides.length) {slideIndex = 1}
+          slides[slideIndex-1].style.display = "block"; 
+          setTimeout(showSlides, 30000); // Change image every 2 seconds
+        }
+    </script>
+    <SCRIPT>
+        var canvas = document.getElementById("myCanvas");
+        var gl = canvas.getContext("webgl");
+        
+        var m = new main();
+        requestAnimationFrame(loop);			
+        canvas.addEventListener("click",main.canvasHandle);
+    
+    </SCRIPT>
+</body>
+</html>
