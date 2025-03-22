@@ -1,0 +1,322 @@
+<!DOCTYPE HTML>
+<HTML lang="en">
+	<Head>
+	<Title>"welcome TO CYLINDER"</TITLE>
+		
+		<!-- 
+		GLSL is the language used for shaders (GL Shader Language)	
+		Attribute - you specify how to pull the data out of the buffers you supply.
+		Buffers - Data loaded onto the GPU (Normally vertex information)
+		Uniforms - global variables (in GLSL) that you set before you run the shader program
+		Textures - Textures are arrays of data you can randomly acces in your shader program.  
+		Varying - are way for a vertex shader to pass data to the fragmentShader.
+		-->
+		<script id="2dVertexShader" type="notjs">
+		attribute vec4 a_position;	
+		//We now want to read in Colors
+		attribute vec3 vert_color;
+		//However, we want to send the color to
+		//The fragment Shader
+		varying vec3 fragColor;
+		
+		//Now we need a uniform.  A uniform is something consistent for all the vertices
+		//in a buffers
+		uniform vec3 transform;
+		uniform vec3 rotation;		
+		
+		//Use a function to position the object
+		vec4 PositionObject(vec4 pos)
+		{
+			mat4 translateM = mat4(1.0,0.0,0.0,0.0,
+						   0.0,1.0,0.0,0.0,
+						   0.0,0.0,1.0,0.0,
+						   transform.x,transform.y,transform.z,1.0);
+			return translateM*pos;	
+		}
+		//Use a function to Rotate the object
+		vec4 RotateObject(vec4 pos)
+		{
+			//This is a nice trick
+			vec3 c = cos(rotation);
+			vec3 s = sin(rotation);
+			fragColor = vert_color;
+			//Surprise!  we have to go column first when we enter the matrix.
+
+			mat4 rotateX = mat4(1.0,	0.0,	0.0,		0.0,
+								0.0,	c.x,	-1.0*s.x,	0.0,
+								0.0,	s.x,	c.x,		0.0,
+								0.0,	0.0,	0.0,		1.0);
+
+			mat4 rotateY = mat4(c.y,	0.0,	-1.0*s.y,	0.0,
+								0.0,	1.0,	0.0,		0.0,
+								s.y,	0.0,	c.y,		0.0,
+								0.0,	0.0,	0.0,		1.0);
+
+			mat4 rotateZ = mat4(c.z,-1.0*s.z,	0.0,		0.0,
+								s.z,	c.z,	0.0,		0.0,
+								0.0,	0.0,	1,			0.0,
+								0.0,	0.0,	0.0,		1.0);
+			return (rotateX * rotateY * rotateZ)*pos;
+		}
+		void main()
+		{
+
+			gl_Position=PositionObject(RotateObject(a_position));
+		}		
+		</SCRIPT>
+		<script id="2dFragmentShader" type="notjs">
+		//Fragment shaders do not have precision so we have to set it.
+		precision mediump float;
+		varying vec3 fragColor;
+		void main()
+		{
+			//gl_FragColor = vec4(0,0,1,1); //Between 0 and 1.
+			gl_FragColor = vec4(fragColor,1);
+		}
+		</script>
+		
+		<script>
+			class WebGL_Interface
+			{
+				constructor()
+				{
+					this.vertexShaderSource = document.getElementById("2dVertexShader").text;
+					this.fragmentShaderSource = document.getElementById("2dFragmentShader").text;
+					this.vertexShader = this.createShader(gl.VERTEX_SHADER, this.vertexShaderSource);
+					this.fragmenShader = this.createShader(gl.FRAGMENT_SHADER, this.fragmentShaderSource);
+					//Link to program
+					this.program = this.createProgram(this.vertexShader,this.fragmenShader);
+					//setup our viewport
+					gl.viewport(0,0, gl.canvas.width, gl.canvas.height);
+					//set clear colors
+					gl.clearColor(1,1,1,1);
+					gl.clear(gl.COLOR_BUFFER_BIT);		
+					//what program to use;
+					
+					//We will need this for now!
+					gl.enable(gl.DEPTH_TEST);
+					
+					gl.useProgram(this.program);
+				}
+				
+				createShader(type,source)
+				{
+					var shader = gl.createShader(type);
+					gl.shaderSource(shader,source);
+					gl.compileShader(shader);
+					var success = gl.getShaderParameter(shader,gl.COMPILE_STATUS);
+					if(success)
+					{
+						return shader;
+					}
+					//Else it didn't work
+					console.error(gl.getShaderInfoLog(shader));
+					gl.deleteShader(shader);
+				}
+				
+				createProgram(vs,fs)
+				{
+					var program = gl.createProgram();
+					gl.attachShader(program,vs);
+					gl.attachShader(program,fs);
+					gl.linkProgram(program);
+					var succsess = gl.getProgramParameter(program,gl.LINK_STATUS);
+					if(succsess)
+					{
+						return program;
+					}
+					console.error(gl.getProgramInfoLog(program));
+					gl.deleteProgram(program);	
+				}
+			
+			}
+
+			
+			class Shape
+			{
+				constructor()
+				{
+					this.buffer=gl.createBuffer();
+					gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+					this.vertCount = 0;
+					//Now we want to add color to our vertices information.
+					this.vertices = [];
+					var circleVerts = 8;
+					var degStep = (2 * Math.PI)/circleVerts;
+					var radius = 0.25;
+					var height = 0.5;
+					var color = [Math.random(), Math.random(), Math.random()];
+					var writeColor = [0, 0, 0];
+					this.moveDir = Math.random() * 2 * Math.PI;
+					for (let i = 0; i < 2; i++) 
+					{
+						for (let j = 0; j < circleVerts; j++)
+						{
+							if (j % 2 == 0) {
+								writeColor[0] = color[0];
+								writeColor[1] = color[1];
+								writeColor[2] = color[2];
+							} else {
+								writeColor[0] = color[0] - 0.1;
+								writeColor[1] = color[1] - 0.1;
+								writeColor[2] = color[2] - 0.1;
+							}
+							this.vertices.push((radius * Math.sin(j * degStep)), (radius * Math.cos(j * degStep)), (i - 0.5) * height, writeColor[0], writeColor[1], writeColor[2]);
+							this.vertices.push(0, 0, (i - 0.5) * height, writeColor[0], writeColor[1], writeColor[2]);
+							this.vertices.push((radius * Math.sin((j + 1) * degStep)), (radius * Math.cos((j + 1) * degStep)), (i - 0.5) * height, writeColor[0], writeColor[1], writeColor[2]);
+							this.vertCount += 3;
+
+							if (i == 0) {
+								this.vertices.push((radius * Math.sin(j * degStep)), (radius * Math.cos(j * degStep)), (i - 0.5) * height, writeColor[0], writeColor[1], writeColor[2]);
+								this.vertices.push((radius * Math.sin((j + 1) * degStep)), (radius * Math.cos((j + 1) * degStep)), (i - 0.5) * height, writeColor[0], writeColor[1], writeColor[2]);
+								this.vertices.push((radius * Math.sin(j * degStep)), (radius * Math.cos(j * degStep)), (i + 0.5) * height, writeColor[0], writeColor[1], writeColor[2]);
+								this.vertCount += 3;
+
+								this.vertices.push((radius * Math.sin((j + 1) * degStep)), (radius * Math.cos((j + 1) * degStep)), (i - 0.5) * height, writeColor[0], writeColor[1], writeColor[2]);
+								this.vertices.push((radius * Math.sin(j * degStep)), (radius * Math.cos(j * degStep)), (i + 0.5) * height, writeColor[0], writeColor[1], writeColor[2]);
+								this.vertices.push((radius * Math.sin((j + 1) * degStep)), (radius * Math.cos((j + 1) * degStep)), (i + 0.5) * height, writeColor[0], writeColor[1], writeColor[2]);
+								this.vertCount += 3;
+							}
+						}
+					}
+					gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertices), gl.STATIC_DRAW);
+					this.loc = [0.0,0.0,0.0];
+					this.rot = [0.0,0.0,0.0];
+				}
+				//Again this could be inherited ... but not always...not all objects
+				
+				render(program)
+				{
+					
+					gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+					
+					//First we bind the buffer
+					var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+					var size = 3;          // 2 components per iteration
+					var type = gl.FLOAT;   // the data is 32bit floats
+					var normalize = false; // don't normalize the data
+					var stride = 6*Float32Array.BYTES_PER_ELEMENT;	//Size in bytes of each element     // 0 = move forward size * sizeof(type) each iteration to get the next position
+					var offset = 0;        // start at the beginning of the buffer
+					gl.enableVertexAttribArray(positionAttributeLocation);
+					gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset);
+					
+					//Now we have to do this for color
+					var colorAttributeLocation = gl.getAttribLocation(program,"vert_color");
+					//We don't have to bind because we already have the correct buffer bound.
+					size = 3;
+					type = gl.FLOAT;
+					normalize = false;
+					stride = 6*Float32Array.BYTES_PER_ELEMENT;	//Size in bytes of each element
+					offset = 3*Float32Array.BYTES_PER_ELEMENT;									//size of the offset
+					gl.enableVertexAttribArray(colorAttributeLocation);
+					gl.vertexAttribPointer(colorAttributeLocation, size, type, normalize, stride, offset);
+							
+					var tranLoc  = gl.getUniformLocation(program,'transform');
+					gl.uniform3fv(tranLoc,new Float32Array(this.loc));
+					var thetaLoc = gl.getUniformLocation(program,'rotation');
+					gl.uniform3fv(thetaLoc,new Float32Array(this.rot));
+					
+					
+					var primitiveType = gl.TRIANGLES;
+					offset = 0;
+					gl.drawArrays(primitiveType, offset, this.vertCount);
+				}
+			}
+ 
+			myWebGL = null;
+		
+			function loop()
+			{
+			gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+
+			m.myTriangle[0].rot[1] += 0.015;
+			m.myTriangle[1].rot[0] += 0.015;
+			m.myTriangle[2].rot[2] += 0.015;
+
+
+			for(var i = 0; i < m.myTriangle.length; i++)
+			{
+				if (i >= 3) {
+					var dir = m.myTriangle[i].moveDir;
+					m.myTriangle[i].loc[0]+= .01 * Math.cos(dir);
+					m.myTriangle[i].loc[1]+= .01 * Math.sin(dir);
+				}
+				//m.myTriangle[i].loc[1]+= .001;
+				m.myTriangle[i].render(m.myWEBGL.program );
+			}
+			requestAnimationFrame(loop);
+			}
+			
+			class main
+			{	
+				constructor()
+				{
+				
+				this.myWEBGL = new WebGL_Interface();
+				myWebGL= this.myWEBGL;
+				this.myTriangle = [];
+				for (let i = 0; i < 3; i++) {
+					var temp = new Shape();
+					this.myTriangle.push(temp);
+					switch(i)
+					{
+						case(0):
+							temp.loc = [0,0.5,0];
+							break;
+						case(1):
+							temp.loc = [0.5,-0.5,0];
+							break;
+						case(2):
+							temp.loc = [-0.5,-0.5,0];
+							break;
+					}	
+				}
+				this.name = "My Class";
+
+				}
+				
+				static canvasHandle(event)
+				{
+					var rect = canvas.getBoundingClientRect();
+					var realX = event.clientX - rect.left;
+					var realY = event.clientY - rect.top;
+					console.log(realX + ", " + realY);
+					var x = -1 + 2*event.clientX/myCanvas.width;
+					var y = -1 + 2*(myCanvas.height - event.clientY)/myCanvas.height;
+					var temp = new Shape();
+					temp.loc = [0,0,0];
+					temp.rot = [0.25 * Math.PI,0.25 * Math.PI,0];
+					m.myTriangle.push(temp);
+					//temp.render(myWebGL.program);
+				}
+			}
+		</script>
+	</Head>
+	<BODY>
+		<HEADER>
+		
+		</HEADER>
+		
+		<CANVAS id="myCanvas" width="600" height="600" style = "border: 1px solid #000;">
+			Your browser does not support canvas.
+		</CANVAS>
+
+		
+		<FOOTER>
+		
+		</FOOTER>
+		<SCRIPT>
+			var canvas = document.getElementById("myCanvas");
+			var gl = canvas.getContext("webgl");
+			
+			var m = new main();
+			requestAnimationFrame(loop);			
+			canvas.addEventListener("click",main.canvasHandle);
+		
+		</SCRIPT>
+		
+	</BODY>
+	
+</HTML>
+		
+		
