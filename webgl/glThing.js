@@ -7,13 +7,13 @@ class Shape
         this.vertCount = 0;
         //Now we want to add color to our vertices information.
         this.vertices = [];
-        var circleVerts = 8;
+        var circleVerts = 10;
         var degStep = (2 * Math.PI)/circleVerts;
-        var radius = 0.25;
-        var height = 0.5;
+        var radius = 0.1;
+        var height = 0.1;
         var color = [Math.random(), Math.random(), Math.random()];
         var writeColor = [0, 0, 0];
-        this.moveDir = Math.random() * 2 * Math.PI;
+        this.moveDir = Math.PI / 4;
         for (let i = 0; i < 2; i++) 
         {
             for (let j = 0; j < circleVerts; j++)
@@ -95,19 +95,28 @@ function loop()
 {
 gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
 
-m.myTriangle[0].rot[1] += 0.015;
-m.myTriangle[1].rot[0] += 0.015;
-m.myTriangle[2].rot[2] += 0.015;
-
-
 for(var i = 0; i < m.myTriangle.length; i++)
 {
-    if (i >= 3) {
-        var dir = m.myTriangle[i].moveDir;
-        m.myTriangle[i].loc[0]+= .01 * Math.cos(dir);
-        m.myTriangle[i].loc[1]+= .01 * Math.sin(dir);
+    console.log(Math.abs(m.myTriangle[i].moveDir) * 180 / Math.PI)
+    if (m.myTriangle[i].loc[0] > 1 || m.myTriangle[i].loc[0] < -1 || m.myTriangle[i].loc[1] > 1 || m.myTriangle[i].loc[1] < -1) {
+        var randDir = (Math.random() * (Math.PI / 48));
+        //console.log(randDir * 180 / Math.PI)
+        if (m.myTriangle[i].moveDir > Math.PI * 2)
+        {
+            m.myTriangle[i].moveDir -= (Math.PI * 2);
+        }
+        else if (m.myTriangle[i].moveDir < -Math.PI * 2)
+        {
+            m.myTriangle[i].moveDir += (Math.PI * 2);
+        }
+        m.myTriangle[i].moveDir = m.myTriangle[i].moveDir + (Math.PI / 2);
     }
-    //m.myTriangle[i].loc[1]+= .001;
+        var dir = m.myTriangle[i].moveDir;
+
+    m.myTriangle[i].loc[0]+= .006 * Math.cos(dir);
+    m.myTriangle[i].loc[1]+= .006 * Math.sin(dir);
+    m.myTriangle[i].rot[0] += .01
+    m.myTriangle[i].rot[1] += .01
     m.myTriangle[i].render(m.myWEBGL.program );
 }
 requestAnimationFrame(loop);
@@ -121,22 +130,9 @@ class main
     this.myWEBGL = new WebGL_Interface();
     myWebGL= this.myWEBGL;
     this.myTriangle = [];
-    for (let i = 0; i < 3; i++) {
-        var temp = new Shape();
-        this.myTriangle.push(temp);
-        switch(i)
-        {
-            case(0):
-                temp.loc = [0,0.5,0];
-                break;
-            case(1):
-                temp.loc = [0.5,-0.5,0];
-                break;
-            case(2):
-                temp.loc = [-0.5,-0.5,0];
-                break;
-        }	
-    }
+    var temp = new Shape();
+    temp.loc[0] = 0.5;
+    this.myTriangle.push(temp);
     this.name = "My Class";
 
     }
@@ -150,7 +146,7 @@ class main
         var x = -1 + 2*event.clientX/myCanvas.width;
         var y = -1 + 2*(myCanvas.height - event.clientY)/myCanvas.height;
         var temp = new Shape();
-        temp.loc = [0,0,0];
+        temp.loc = [0.5,0,0];
         temp.rot = [0.25 * Math.PI,0.25 * Math.PI,0];
         m.myTriangle.push(temp);
         //temp.render(myWebGL.program);

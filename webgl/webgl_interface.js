@@ -11,7 +11,7 @@ class WebGL_Interface
 					//setup our viewport
 					gl.viewport(0,0, gl.canvas.width, gl.canvas.height);
 					//set clear colors
-					gl.clearColor(1, 1, 1, 1);
+					gl.clearColor(0, 0, 0, 0);
 					gl.clear(gl.COLOR_BUFFER_BIT);		
 					//what program to use;
 					

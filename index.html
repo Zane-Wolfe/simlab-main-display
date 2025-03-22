@@ -6,7 +6,7 @@
     <link href="style.css" rel="stylesheet">
     <script src="clock.js"></script>
     <script src="webgl/glThing.js"></script>
-    <script src="'webgl/webgl_interface.js"></script>
+    <script src="webgl/webgl_interface.js"></script>
     <title>SimScreen</title>
     <script id="2dVertexShader" type="notjs">
 		attribute vec4 a_position;	
@@ -99,6 +99,9 @@
         <div class="mySlides fade">
             <img src="img/Florida_Poly_IST152.jpg">
         </div>
+		<div>
+			<canvas id="myCanvas"></canvas>
+		</div>
     </div>
 
     <script>
@@ -119,10 +122,12 @@
     </script>
     <SCRIPT>
         var canvas = document.getElementById("myCanvas");
+		canvas.width =  window.innerWidth;
+		canvas.height = window.innerHeight;
         var gl = canvas.getContext("webgl");
         
         var m = new main();
-        requestAnimationFrame(loop);			
+        requestAnimationFrame(loop);		
         canvas.addEventListener("click",main.canvasHandle);
     
     </SCRIPT>

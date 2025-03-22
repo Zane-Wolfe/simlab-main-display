@@ -19,6 +19,11 @@ function startTime() {
         hCorrected = h - 12;
         AM = false;
     }
+    else if (h == 0)
+    {
+        hCorrected = h + 12;
+        AM = true;
+    }
     else
     {
         hCorrected = h;
@@ -27,9 +32,6 @@ function startTime() {
 
     switch(dayOfWeek)
     {
-        case(0):
-        dayText = "Saturday"
-        break;
         case(1):
         dayText = "Sunday"
         break;
@@ -48,7 +50,9 @@ function startTime() {
         case(5):
         dayText = "Friday"
         break;
-
+        case(6):
+        dayText = "Saturday"
+        break;
     }
 
     switch(day % 10)
